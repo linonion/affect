@@ -1,0 +1,91 @@
+{
+  "session_id": "685b3048-3dfc-4499-a5eb-02546208850c",
+  "interviewer_style": "neutral",
+  "feedback_mode": "real",
+  "baseline": {
+    "nervousness_score": 5.868906671227959,
+    "avg_rms": 0.010408941369721921,
+    "silence_ratio": 0.4867924528301887,
+    "intensity_variance": 0.00013251805855934878,
+    "speech_rate": 0.0,
+    "filler_count": 0,
+    "repetition_count": 0,
+    "duration_sec": 4.419999999999999
+  },
+  "questions": [
+    {
+      "id": 1,
+      "text": "Describe a time you faced a challenge and how you handled it.",
+      "audio_url": null
+    },
+    {
+      "id": 2,
+      "text": "Tell me about a time when you received critical feedback. How did you respond?",
+      "audio_url": null
+    },
+    {
+      "id": 3,
+      "text": "Tell me about a time you had to work under pressure or a tight deadline.",
+      "audio_url": null
+    }
+  ],
+  "answers": [
+    {
+      "question_id": 1,
+      "question_text": "Describe a time you faced a challenge and how you handled it.",
+      "transcript": null,
+      "voice_features": {
+        "nervousness_score": 16.41301894936935,
+        "avg_rms": 0.0011585758162087256,
+        "silence_ratio": 0.9567567567567568,
+        "intensity_variance": 2.3901309112703428e-05,
+        "speech_rate": 0.0,
+        "filler_count": 0,
+        "repetition_count": 0,
+        "duration_sec": 3.0799999999999965
+      }
+    },
+    {
+      "question_id": 2,
+      "question_text": "Tell me about a time when you received critical feedback. How did you respond?",
+      "transcript": null,
+      "voice_features": {
+        "nervousness_score": 11.092525775566651,
+        "avg_rms": 0.01769351077746898,
+        "silence_ratio": 0.3217665615141956,
+        "intensity_variance": 0.00022739800903230677,
+        "speech_rate": 0.0,
+        "filler_count": 0,
+        "repetition_count": 0,
+        "duration_sec": 5.268
+      }
+    },
+    {
+      "question_id": 3,
+      "question_text": "Tell me about a time you had to work under pressure or a tight deadline.",
+      "transcript": null,
+      "voice_features": {
+        "nervousness_score": 28.60404542796053,
+        "avg_rms": 0.002085672663709305,
+        "silence_ratio": 0.9824561403508771,
+        "intensity_variance": 9.827322838596167e-07,
+        "speech_rate": 0.0,
+        "filler_count": 0,
+        "repetition_count": 0,
+        "duration_sec": 5.708
+      }
+    }
+  ],
+  "survey": {
+    "q1": 3,
+    "q2": 3,
+    "q3": 3,
+    "q4": 3,
+    "q5": 3,
+    "q6": 3,
+    "q7": 3,
+    "q8": 3,
+    "q9": 3,
+    "q10_text": "jk\n"
+  }
+}

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Affective Mock Interview</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    section { display: none; max-width: 800px; margin: 24px auto; }
+    section.active { display: block; }
+    button { margin: 8px 4px; padding: 6px 12px; }
+    #nerv-bar-container { width: 100%; height: 16px; background: #eee; border-radius: 8px; overflow: hidden; margin-top: 8px; }
+    #nerv-bar-fill { height: 100%; width: 0%; background: #ff6b6b; transition: width 0.1s linear; }
+  </style>
+</head>
+<body>
+
+  <!-- Screen 1: Consent -->
+<section id="screen-consent" class="active">
+  <h1>Consent Form</h1>
+
+  <h2>What is this mock interview?</h2>
+  <p>
+    This page is a practice tool for behavioral interviews. In this session, an AI interviewer will ask you
+    <strong>three common behavioral interview questions</strong>. For each question, you will have up to
+    <strong>3 minutes</strong> to answer, and we encourage you to structure your answers using the
+    <strong>STAR framework</strong> (Situation, Task, Action, Result).
+  </p>
+  <p>
+    During the interview, you will also see a <strong>“Nervousness” bar</strong> on the right. This is a rough
+    biofeedback signal based on your voice. It is designed to help you notice your
+    current state, not to provide any kind of medical or clinical diagnosis.
+  </p>
+
+  <h2>How will the session work?</h2>
+  <ul>
+    <li>Please complete this practice <strong>alone</strong>, in a <strong>quiet environment</strong>, without interruptions.</li>
+    <li>At the beginning, you will be asked to <strong>read a short baseline paragraph</strong>.
+      This baseline recording will be used as a reference for later nervousness estimates.</li>
+    <li>For each question:
+      <ul>
+        <li>The AI interviewer will read the question to you.</li>
+        <li>After that, you can click <strong>“Start Answer”</strong> to begin speaking.</li>
+        <li>You can click <strong>“End Answer”</strong> at any time, or the system will stop automatically after 3 minutes.</li>
+      </ul>
+    </li>
+    <li>After each answer, the AI interviewer will give you a short spoken and written response.
+      It will not ask new questions, but will give a feedback on your answer.</li>
+  </ul>
+
+  <h2>What data will be recorded?</h2>
+  <p>
+    If you choose to participate, the system may record and save:
+  </p>
+  <ul>
+    <li>Your <strong>voice recordings</strong> (baseline reading and your answers to each question).</li>
+    <li>The automatically generated <strong>transcripts</strong> of your speech (speech-to-text).</li>
+    <li>Your chosen <strong>biofeedback condition</strong>, the questions asked, and the AI’s feedback text.</li>
+  </ul>
+  <p>
+    These data may be used for research and course-related analysis, reports, or presentations. Any personally
+    identifying information will be removed or anonymized as much as possible before sharing or publication.
+    Please avoid mentioning highly sensitive personal information (for example, real full names or confidential
+    company details) in your answers.
+  </p>
+
+  <h2>Voluntary participation</h2>
+  <p>
+    Your participation is completely voluntary. You may stop at any time by closing this page, and you are free not to
+    use this tool. By clicking <strong>“I Agree”</strong> below, you confirm that you have read this information,
+    understand how your data may be used, and consent to participate in this mock interview practice session.
+  </p>
+
+  <button id="btn-consent-accept">I Agree</button>
+</section>
+
+
+  <!-- Screen 2: Config (style + feedback condition) -->
+  <section id="screen-config">
+    <h1>Experiment Setup</h1>
+    <p>Choose AI interviewer:</p>
+    <label><input type="radio" name="style" value="neutral" checked /> Interviewer A</label><br>
+    <label><input type="radio" name="style" value="challenging" /> Interviewer B</label>
+
+    <p>Choose biofeedback condition:</p>
+    <label><input type="radio" name="feedback" value="real" checked /> Biofeedback A</label><br>
+    <label><input type="radio" name="feedback" value="fake" /> Biofeedback B</label><br>
+    <label><input type="radio" name="feedback" value="none" /> No biofeedback</label>
+
+    <button id="btn-config-next">Continue</button>
+  </section>
+
+<!-- Screen 3: Baseline reading -->
+<section id="screen-baseline">
+  <h1>Baseline Reading</h1>
+
+  <p>
+    Before you start, please move to a quiet place and stay there for the whole session.
+    Try to keep the background noise, microphone position, and your seating position the same
+    so that this baseline matches the conditions of your later answers.
+  </p>
+
+  <p>
+    Please read the following paragraph in a neutral, natural tone. Try to speak at a comfortable pace,
+    as if you were explaining it to a friend. This recording will be used as your baseline for later
+    nervousness estimates.
+  </p>
+
+<blockquote id="baseline-text">
+  I’m getting ready to take part in today’s mock interview. I’m reading this sentence in a calm and natural voice.
+</blockquote>
+
+
+  <p>
+    When you're ready, click <strong>"Start baseline"</strong> and read the paragraph out loud.
+    Click <strong>"Stop baseline"</strong> when you finish.
+  </p>
+
+  <button id="btn-baseline-start">Start baseline</button>
+  <button id="btn-baseline-stop" disabled>Stop baseline</button>
+
+  <p>Baseline nervousness (preview): <span id="baseline-preview">N/A</span></p>
+
+  <button id="btn-baseline-continue" disabled>Continue to mock interview</button>
+</section>
+
+
+  <!-- Screen 4: Mock interview (3 questions, all voice) -->
+  <section id="screen-interview">
+    <h1>Mock Interview</h1>
+    <p><strong>Question <span id="q-index">1</span>/3</strong></p>
+    <p id="question-text"></p>
+
+    <p>
+      When the question is displayed, click "Start answer" and speak your answer.
+      You have up to 3 minutes per question.
+    </p>
+
+    <button id="btn-answer-start">Start answer</button>
+    <button id="btn-answer-stop" disabled>End answer</button>
+
+    <p>Time left: <span id="time-left">180</span> s</p>
+
+    <div id="nerv-container">
+      <p>Nervousness feedback:</p>
+      <div id="nerv-bar-container">
+        <div id="nerv-bar-fill"></div>
+      </div>
+      <p id="nerv-text">Nervousness: 0</p>
+    </div>
+
+    <h3>AI Follow-up</h3>
+    <p id="followup-text">(will appear after each answer)</p>
+  </section>
+
+  <!-- Screen 5: Thank you / summary -->
+<section id="screen-done">
+  <h1>Thank you!</h1>
+  <p>The round of 3 questions is complete.</p>
+  <p>You can now close the page, or fill out the short questionnaire below.</p>
+
+  <h2>Session Summary (for your reference)</h2>
+  <pre id="summary-json"></pre>
+
+  <hr />
+
+  <h2>Post-Interview Questionnaire</h2>
+  <p>
+    Please answer the following questions about how you felt during this mock interview.
+    There are no right or wrong answers — we are interested in your subjective experience.
+  </p>
+  <p><strong>Scale:</strong> 1 = Strongly disagree, 7 = Strongly agree</p>
+
+  <ol id="survey-list">
+    <li>
+      I felt nervous during this mock interview.<br />
+      <span>
+        <label><input type="radio" name="q1" value="1" />1</label>
+        <label><input type="radio" name="q1" value="2" />2</label>
+        <label><input type="radio" name="q1" value="3" />3</label>
+        <label><input type="radio" name="q1" value="4" />4</label>
+        <label><input type="radio" name="q1" value="5" />5</label>
+        <label><input type="radio" name="q1" value="6" />6</label>
+        <label><input type="radio" name="q1" value="7" />7</label>
+      </span>
+    </li>
+    <li>
+      I felt stressed or under pressure while answering the questions.<br />
+      <span>
+        <label><input type="radio" name="q2" value="1" />1</label>
+        <label><input type="radio" name="q2" value="2" />2</label>
+        <label><input type="radio" name="q2" value="3" />3</label>
+        <label><input type="radio" name="q2" value="4" />4</label>
+        <label><input type="radio" name="q2" value="5" />5</label>
+        <label><input type="radio" name="q2" value="6" />6</label>
+        <label><input type="radio" name="q2" value="7" />7</label>
+      </span>
+    </li>
+    <li>
+      I felt calm and in control during the interview. (reverse coded)<br />
+      <span>
+        <label><input type="radio" name="q3" value="1" />1</label>
+        <label><input type="radio" name="q3" value="2" />2</label>
+        <label><input type="radio" name="q3" value="3" />3</label>
+        <label><input type="radio" name="q3" value="4" />4</label>
+        <label><input type="radio" name="q3" value="5" />5</label>
+        <label><input type="radio" name="q3" value="6" />6</label>
+        <label><input type="radio" name="q3" value="7" />7</label>
+      </span>
+    </li>
+    <li>
+      I felt confident about the answers I gave.<br />
+      <span>
+        <label><input type="radio" name="q4" value="1" />1</label>
+        <label><input type="radio" name="q4" value="2" />2</label>
+        <label><input type="radio" name="q4" value="3" />3</label>
+        <label><input type="radio" name="q4" value="4" />4</label>
+        <label><input type="radio" name="q4" value="5" />5</label>
+        <label><input type="radio" name="q4" value="6" />6</label>
+        <label><input type="radio" name="q4" value="7" />7</label>
+      </span>
+    </li>
+    <li>
+      I paid attention to the nervousness bar during my answers.<br />
+      <span>
+        <label><input type="radio" name="q5" value="1" />1</label>
+        <label><input type="radio" name="q5" value="2" />2</label>
+        <label><input type="radio" name="q5" value="3" />3</label>
+        <label><input type="radio" name="q5" value="4" />4</label>
+        <label><input type="radio" name="q5" value="5" />5</label>
+        <label><input type="radio" name="q5" value="6" />6</label>
+        <label><input type="radio" name="q5" value="7" />7</label>
+      </span>
+    </li>
+    <li>
+      The nervousness bar felt meaningful and reflected something about my state.<br />
+      <span>
+        <label><input type="radio" name="q6" value="1" />1</label>
+        <label><input type="radio" name="q6" value="2" />2</label>
+        <label><input type="radio" name="q6" value="3" />3</label>
+        <label><input type="radio" name="q6" value="4" />4</label>
+        <label><input type="radio" name="q6" value="5" />5</label>
+        <label><input type="radio" name="q6" value="6" />6</label>
+        <label><input type="radio" name="q6" value="7" />7</label>
+      </span>
+    </li>
+    <li>
+      Seeing the nervousness bar helped me become more aware of how I was feeling.<br />
+      <span>
+        <label><input type="radio" name="q7" value="1" />1</label>
+        <label><input type="radio" name="q7" value="2" />2</label>
+        <label><input type="radio" name="q7" value="3" />3</label>
+        <label><input type="radio" name="q7" value="4" />4</label>
+        <label><input type="radio" name="q7" value="5" />5</label>
+        <label><input type="radio" name="q7" value="6" />6</label>
+        <label><input type="radio" name="q7" value="7" />7</label>
+      </span>
+    </li>
+    <li>
+      The feedback from the AI interviewer felt helpful for improving my answers.<br />
+      <span>
+        <label><input type="radio" name="q8" value="1" />1</label>
+        <label><input type="radio" name="q8" value="2" />2</label>
+        <label><input type="radio" name="q8" value="3" />3</label>
+        <label><input type="radio" name="q8" value="4" />4</label>
+        <label><input type="radio" name="q8" value="5" />5</label>
+        <label><input type="radio" name="q8" value="6" />6</label>
+        <label><input type="radio" name="q8" value="7" />7</label>
+      </span>
+    </li>
+    <li>
+      Overall, this mock interview was a useful way to practice.<br />
+      <span>
+        <label><input type="radio" name="q9" value="1" />1</label>
+        <label><input type="radio" name="q9" value="2" />2</label>
+        <label><input type="radio" name="q9" value="3" />3</label>
+        <label><input type="radio" name="q9" value="4" />4</label>
+        <label><input type="radio" name="q9" value="5" />5</label>
+        <label><input type="radio" name="q9" value="6" />6</label>
+        <label><input type="radio" name="q9" value="7" />7</label>
+      </span>
+    </li>
+  </ol>
+
+  <h3>Optional: Any other comments?</h3>
+  <p>If you have any other thoughts about how this mock interview felt, you can write them here:</p>
+  <textarea id="q10-text" rows="3" style="width: 100%;"></textarea>
+
+  <br />
+  <button id="submit-survey">Submit questionnaire</button>
+  <p id="survey-status"></p>
+</section>
+
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
