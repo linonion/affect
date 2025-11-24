@@ -1,0 +1,6 @@
+backend/.venv/
+__pycache__/
+
+backend/.env
+backend/data/audio/
+backend/data/sessions/
