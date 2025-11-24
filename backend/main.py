@@ -35,8 +35,40 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # 简单的内存内 session 存储（开发用途）
 SESSIONS: Dict[str, Dict[str, Any]] = {}
+WORK_SUFFIX = ".work.json"
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+
+
+# ============ Session 持久化，防止 Render 重启丢失内存 =============
+def _work_path(session_id: str) -> Path:
+    return DATA_DIR / f"{session_id}{WORK_SUFFIX}"
+
+
+def _get_session(session_id: str) -> Dict[str, Any] | None:
+    sess = SESSIONS.get(session_id)
+    if sess:
+        return sess
+    # Render 重启后尝试从磁盘恢复
+    wp = _work_path(session_id)
+    if wp.exists():
+        try:
+            with wp.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+            SESSIONS[session_id] = data
+            return data
+        except Exception as e:
+            print(f"[SESSION] Failed to load work file {wp}: {e!r}")
+    return None
+
+
+def _save_session(session_id: str, sess: Dict[str, Any]) -> None:
+    try:
+        with _work_path(session_id).open("w", encoding="utf-8") as f:
+            json.dump(sess, f, indent=2)
+    except Exception as e:
+        print(f"[SESSION] Failed to persist session {session_id}: {e!r}")
+
 
 # ============ 1. 创建 session（用户点击 I Agree 之后） ============
 
@@ -60,6 +92,7 @@ def start_session(consent: ConsentRequest):
         "current_q_index": 0,
         "audio_files": [],   # ⭐ 记录这个 session 生成过哪些 TTS 文件
     }
+    _save_session(session_id, SESSIONS[session_id])
     return {"session_id": session_id}
 
 
@@ -67,12 +100,13 @@ def start_session(consent: ConsentRequest):
 
 @app.post("/session/{session_id}/config")
 def set_config(session_id: str, config: SessionConfig):
-    sess = SESSIONS.get(session_id)
+    sess = _get_session(session_id)
     if not sess:
         raise HTTPException(status_code=404, detail="Session not found")
 
     # 保存 interviewer_style + feedback_mode
     sess["config"] = config.dict()
+    _save_session(session_id, sess)
     return {"ok": True}
 
 
@@ -83,11 +117,12 @@ def upload_baseline(session_id: str, baseline: BaselineUpload):
     """
     Baseline 阶段结束时调用，前端会把 voiceEngine 统计出的 baseline 特征传上来。
     """
-    sess = SESSIONS.get(session_id)
+    sess = _get_session(session_id)
     if not sess:
         raise HTTPException(status_code=404, detail="Session not found")
 
     sess["baseline"] = baseline.voice_features.dict()
+    _save_session(session_id, sess)
     return {"ok": True}
 
 
@@ -95,7 +130,7 @@ def upload_baseline(session_id: str, baseline: BaselineUpload):
 
 @app.get("/session/{session_id}/next_question", response_model=Question)
 def get_next_question(session_id: str):
-    sess = SESSIONS.get(session_id)
+    sess = _get_session(session_id)
     if not sess:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -135,7 +170,7 @@ def get_next_question(session_id: str):
 
 @app.post("/session/{session_id}/answer", response_model=FollowupResponse)
 def submit_answer(session_id: str, payload: AnswerUpload):
-    sess = SESSIONS.get(session_id)
+    sess = _get_session(session_id)
     if not sess:
         raise HTTPException(status_code=404, detail="Session not found")
 
@@ -157,6 +192,7 @@ def submit_answer(session_id: str, payload: AnswerUpload):
     }
     sess["answers"].append(answer_record)
     sess["current_q_index"] += 1
+    _save_session(session_id, sess)
 
     style = sess["config"]["interviewer_style"]
     followup_text = generate_followup(style, q["text"], payload.transcript)
@@ -185,7 +221,7 @@ def submit_answer(session_id: str, payload: AnswerUpload):
 
 @app.post("/session/{session_id}/finish", response_model=SessionSummary)
 def finish_session(session_id: str):
-    sess = SESSIONS.get(session_id)
+    sess = _get_session(session_id)
     if not sess:
         # 这里是你之前 404 的来源
         raise HTTPException(status_code=404, detail="Session not found")
@@ -233,6 +269,12 @@ def finish_session(session_id: str):
 
     # 3) （可选）从内存中删除这个 session，防止之后再访问
     del SESSIONS[session_id]
+    try:
+        _work_path(session_id).unlink()
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        print(f"[SESSION] Failed to delete work file for {session_id}: {e!r}")
 
     return summary
 
