@@ -2,12 +2,15 @@
 
 import json
 from pathlib import Path
+import tempfile
+import zipfile
 from typing import Any, Dict
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
 from fastapi import Request
 from fastapi.responses import FileResponse, RedirectResponse, Response
+from starlette.background import BackgroundTask
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from models import (AnswerUpload, BaselineUpload, ConsentRequest,
@@ -316,6 +319,54 @@ def submit_survey(session_id: str, survey: SurveyResponse):
         print(f"[SURVEY] Also updated in-memory session {session_id}")
 
     return {"ok": True}
+
+
+# ============ 7. 管理接口：导出已完成的 session JSON ============
+@app.get("/sessions")
+def list_sessions():
+    """
+    返回已完成的 session_id 列表（忽略 .work.json 临时文件）。
+    """
+    files = sorted(
+        p for p in DATA_DIR.glob("*.json") if not p.name.endswith(WORK_SUFFIX)
+    )
+    return {"count": len(files), "sessions": [p.stem for p in files]}
+
+
+@app.get("/sessions/{session_id}/download")
+def download_session(session_id: str):
+    """
+    下载单个 session 的 JSON。
+    """
+    path = DATA_DIR / f"{session_id}.json"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Session summary not found")
+    return FileResponse(path, media_type="application/json", filename=path.name)
+
+
+@app.get("/sessions/archive")
+def download_archive():
+    """
+    打包所有 session JSON 为 zip 下载。
+    """
+    files = [p for p in DATA_DIR.glob("*.json") if not p.name.endswith(WORK_SUFFIX)]
+    if not files:
+        raise HTTPException(status_code=404, detail="No session files")
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp:
+        zip_path = Path(tmp.name)
+
+    with zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for p in files:
+            zf.write(p, arcname=p.name)
+
+    # 用 BackgroundTask 下载完删除临时文件
+    return FileResponse(
+        zip_path,
+        media_type="application/zip",
+        filename="sessions.zip",
+        background=BackgroundTask(zip_path.unlink, missing_ok=True),
+    )
 
 # ============ 最后挂载前端静态资源（放在所有 API 路由之后，避免覆盖 /session/...） ============
 @app.api_route("/", methods=["GET", "HEAD"])
