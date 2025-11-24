@@ -6,7 +6,7 @@ from typing import Any, Dict
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from models import (AnswerUpload, BaselineUpload, ConsentRequest,
@@ -275,9 +275,12 @@ def submit_survey(session_id: str, survey: SurveyResponse):
     return {"ok": True}
 
 # ============ 最后挂载前端静态资源（放在所有 API 路由之后，避免覆盖 /session/...） ============
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def root():
-    # 避免静态目录挂到 "/" 覆盖 API，统一放到 /app/
+    # Render 的健康检查会发 HEAD /，直接返回首页文件
+    index_file = FRONTEND_DIR / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
     return RedirectResponse(url="/app/")
 
 # 静态文件挂载到 /app
