@@ -6,6 +6,7 @@ from typing import Any, Dict
 from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from models import (AnswerUpload, BaselineUpload, ConsentRequest,
@@ -16,8 +17,6 @@ from services.tts_openai import AUDIO_DIR, synthesize_tts
 
 app = FastAPI()
 app.mount("/audio", StaticFiles(directory=AUDIO_DIR), name="audio")
-FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
-app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
 
 # 允许前端 localhost 调用（开发阶段先放开所有域）
@@ -36,6 +35,7 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 # 简单的内存内 session 存储（开发用途）
 SESSIONS: Dict[str, Dict[str, Any]] = {}
 
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 # ============ 1. 创建 session（用户点击 I Agree 之后） ============
 
@@ -273,3 +273,12 @@ def submit_survey(session_id: str, survey: SurveyResponse):
         print(f"[SURVEY] Also updated in-memory session {session_id}")
 
     return {"ok": True}
+
+# ============ 最后挂载前端静态资源（放在所有 API 路由之后，避免覆盖 /session/...） ============
+@app.get("/")
+def root():
+    # 避免静态目录挂到 "/" 覆盖 API，统一放到 /app/
+    return RedirectResponse(url="/app/")
+
+# 静态文件挂载到 /app
+app.mount("/app", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
