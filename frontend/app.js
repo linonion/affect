@@ -2,14 +2,13 @@
 console.log("[app.js] loaded v6");
 
 import {
-    initVoiceEngine,
-    startAnswer,
-    startBaselineCollect,
-    stopAnswerAndGetFeatures,
-    stopBaselineCollectAndGetFeatures,
+  initVoiceEngine,
+  startAnswer,
+  startBaselineCollect,
+  stopAnswerAndGetFeatures,
+  stopBaselineCollectAndGetFeatures,
 } from "./voiceEngine.js";
 
-// 默认走同源（部署到同一个 Render 服务时不用改）；如果需要跨域，可以在 index.html 里注入 window.API_BASE
 const API_BASE = window.API_BASE || "";
 
 let state = {
@@ -42,7 +41,7 @@ function updateNervUI(score) {
   text.textContent = `Nervousness: ${clamped.toFixed(1)}`;
 }
 
-// ====== 简单的音频播放 helper（播放 URL，结束后回调） ======
+
 let currentAudio = null;
 
 function playAudioThen(url, onEnd) {
@@ -176,7 +175,6 @@ $("btn-answer-start").addEventListener("click", () => {
   console.log("[answer] start, feedbackMode =", state.feedbackMode);
 
   startAnswer(state.feedbackMode, (score) => {
-    // 只有 real/fake 才显示条
     if (state.feedbackMode !== "none") {
       $("nerv-container").style.display = "block";
       updateNervUI(score);
@@ -208,7 +206,6 @@ async function loadNextQuestion() {
     console.log("[next_question] status =", res.status, "raw =", rawText);
 
     if (!res.ok) {
-      // 后端说没有更多题了
       await finishSession();
       return;
     }
@@ -222,12 +219,10 @@ async function loadNextQuestion() {
     $("time-left").textContent = "180";
     updateNervUI(0);
 
-    // ⭐ 出题时：先禁用 start/stop，播放 OpenAI TTS 音频
     $("btn-answer-start").disabled = true;
     $("btn-answer-stop").disabled = true;
 
     if (q.audio_url) {
-    // ⭐ 把相对路径 /audio/... 变成 http://localhost:8000/audio/...
     const audioUrl = q.audio_url.startsWith("http")
         ? q.audio_url
         : `${API_BASE}${q.audio_url}`;
@@ -259,7 +254,6 @@ async function stopCurrentAnswer(timeout) {
 
   console.log("[answer] stop, timeout =", timeout);
 
-  // 1. 从 voiceEngine 拿特征 + 文本
   let features, transcript;
   try {
     const result = stopAnswerAndGetFeatures();
@@ -275,7 +269,6 @@ async function stopCurrentAnswer(timeout) {
     return;
   }
 
-  // 2. 发给后端，拿 follow-up
   let followupText = "";
   let followupAudioUrl = "";
   try {
@@ -311,7 +304,6 @@ async function stopCurrentAnswer(timeout) {
 
   $("followup-text").textContent = followupText;
 
-  // ⭐ 播放 follow-up 音频，播完再进入下一题/结束
     if (followupAudioUrl) {
     const audioUrl = followupAudioUrl.startsWith("http")
         ? followupAudioUrl
@@ -368,7 +360,7 @@ async function finishSession() {
 const surveyBtn = document.getElementById("submit-survey");
 if (surveyBtn) {
   surveyBtn.addEventListener("click", async () => {
-    // 简单收集 q1~q9
+    // q1~q9
     const survey = {};
     for (let i = 1; i <= 9; i++) {
       const sel = document.querySelector(`input[name="q${i}"]:checked`);

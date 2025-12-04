@@ -7,14 +7,12 @@ from typing import List
 from dotenv import load_dotenv
 from openai import OpenAI
 
-# 读取 .env 配置
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise RuntimeError("OPENAI_API_KEY not set")
 
-# 可以在 .env 里覆盖，比如 OPENAI_CHAT_MODEL=gpt-4o-mini
 OPENAI_CHAT_MODEL = os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -81,10 +79,8 @@ Your response must:
 # ===================== Question Pool =====================
 
 GENERAL_QUESTIONS: List[str] = [
-    # 已有问题
     "Describe a time you faced a challenge and how you handled it.",
     "Tell me about a time you worked in a team.",
-    # 补充常见 BQ 问题
     "Describe a situation where you had to learn something quickly.",
     "Tell me about a time when you had to deal with a difficult teammate or stakeholder.",
     "Describe a time you made a mistake and how you handled it.",
@@ -102,10 +98,6 @@ GENERAL_QUESTIONS: List[str] = [
 
 
 def pick_three_questions() -> List[str]:
-    """
-    从 GENERAL_QUESTIONS 中随机选 3 个问题。
-    如果你想固定顺序，也可以改成 return GENERAL_QUESTIONS[:3]
-    """
     if len(GENERAL_QUESTIONS) <= 3:
         return GENERAL_QUESTIONS
     return random.sample(GENERAL_QUESTIONS, k=3)
@@ -114,10 +106,7 @@ def pick_three_questions() -> List[str]:
 # ===================== Follow-up Generation =====================
 
 def generate_followup(style: str, question: str, transcript: str | None) -> str:
-    """
-    根据面试官风格（neutral/challenging）、问题和候选人的回答 transcript，
-    生成 2–3 句自然的口头反馈（不再问新问题；如果回答胡言乱语或完全跑题，也会指出来）。
-    """
+"
     if style == "neutral":
         system_prompt = NEUTRAL_SYSTEM_PROMPT
     else:
@@ -151,7 +140,6 @@ def generate_followup(style: str, question: str, transcript: str | None) -> str:
         return content.strip()
     except Exception as e:
         print("[OpenAI] Error generating followup:", repr(e))
-        # fallback 保证接口不挂掉
         if style == "neutral":
             return (
                 "Thanks for your answer. Overall it's a good start — next time, "

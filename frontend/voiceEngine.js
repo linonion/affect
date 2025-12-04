@@ -37,7 +37,6 @@ let baselineTotalFrames = 0;
 let baselineSilenceFrames = 0;
 let baselineNervHistory = [];
 
-// ===== 当前题回答状态 =====
 let isAnswering = false;
 let answerStartTime = null;
 let answerRmsHistory = [];
@@ -45,26 +44,25 @@ let answerTotalFrames = 0;
 let answerSilenceFrames = 0;
 let answerNervHistory = [];
 
-// ===== 通用特征 =====
 let silenceFramesRun = 0;
 let rmsShortWindow = []; // short RMS window
 
-// biofeedback 模式 / 回调
+// biofeedback
 let currentFeedbackMode = "real"; // "real" | "fake" | "none"
 let onNervousnessCb = null;
 let fakeScore = null;
 
-// ===== Web Speech 相关 =====
+// ===== Web Speech  =====
 let recognition = null;
 let recognizing = false;
-let currentTranscript = ""; // 当前这一题的累积文本
+let currentTranscript = ""; 
 
-// 一点点常数
+
 const SMALL = 1e-6;
 const RMS_SILENCE_THRESHOLD = 0.005;
 const FEATURE_WINDOW_FRAMES = 60;
 
-// ========== 对外导出 ==========
+
 
 export async function initVoiceEngine() {
   if (audioContext) return;
@@ -90,7 +88,7 @@ export async function initVoiceEngine() {
 
   console.log("[voiceEngine] init done, FRAME_MS =", FRAME_MS.toFixed(2));
 
-  // ⭐ 启动 Web Speech 识别（如果浏览器支持）
+
   initSpeechRecognition();
 
   if (!analysisStarted) {
@@ -99,7 +97,7 @@ export async function initVoiceEngine() {
   }
 }
 
-// ===== baseline 段 =====
+
 export function startBaselineCollect() {
   console.log("[voiceEngine] startBaselineCollect");
   isBaselineCollecting = true;
@@ -142,9 +140,9 @@ export function stopBaselineCollectAndGetFeatures() {
     avg_rms: avgRms || 0,
     silence_ratio: silenceRatio || 0,
     intensity_variance: intensityVariance || 0,
-    speech_rate: 0,          // baseline 阶段不算
-    filler_count: 0,         // baseline 阶段不算
-    repetition_count: 0,     // baseline 阶段不算
+    speech_rate: 0,
+    filler_count: 0,
+    repetition_count: 0,
     duration_sec: durationSec,
   };
 
@@ -152,7 +150,6 @@ export function stopBaselineCollectAndGetFeatures() {
   return features;
 }
 
-// ===== 回答阶段 =====
 export function startAnswer(feedbackMode, onNervousnessUpdate) {
   console.log("[voiceEngine] startAnswer, mode =", feedbackMode);
   currentFeedbackMode = feedbackMode || "real";
@@ -165,7 +162,6 @@ export function startAnswer(feedbackMode, onNervousnessUpdate) {
   answerSilenceFrames = 0;
   answerNervHistory = [];
 
-  // ⭐ 每题开始时清空 transcript
   currentTranscript = "";
 
   fakeScore = null;
@@ -174,7 +170,7 @@ export function startAnswer(feedbackMode, onNervousnessUpdate) {
 export function stopAnswerAndGetFeatures() {
   console.log("[voiceEngine] stopAnswerAndGetFeatures");
 
-  // 非常防御性：任何地方算特征都不要抛异常
+
   try {
     isAnswering = false;
     onNervousnessCb = null;
@@ -198,10 +194,8 @@ export function stopAnswerAndGetFeatures() {
       ? answerNervHistory.reduce((a, b) => a + b, 0) / answerNervHistory.length
       : 0;
 
-    // ⭐ 本题识别的文本
     const transcript = (currentTranscript || "").trim();
 
-    // ⭐ 根据 transcript 计算语速 & filler & 重复词计数
     let speechRate = 0;
     let fillerCount = 0;
     let repetitionCount = 0;
@@ -216,7 +210,7 @@ export function stopAnswerAndGetFeatures() {
 
       const lower = transcript.toLowerCase();
 
-      // ---- 1) 传统 filler 计数（保留） ----
+
       const FILLERS = [
         "um", "uh",
         "like",
@@ -236,7 +230,6 @@ export function stopAnswerAndGetFeatures() {
         return cnt + (matches ? matches.length : 0);
       }, 0);
 
-      // ---- 2) 重复词计数（repetition_count） ----
       const tokens = lower
         .replace(/[.,!?;:"“”]/g, " ")
         .split(/\s+/)
@@ -247,7 +240,7 @@ export function stopAnswerAndGetFeatures() {
         for (const t of tokens) {
           counts[t] = (counts[t] || 0) + 1;
         }
-        // 出现3次算2个重复；出现1次算0
+
         repetitionCount = Object.values(counts).reduce((acc, cnt) => {
           return acc + (cnt > 1 ? cnt - 1 : 0);
         }, 0);
@@ -261,14 +254,14 @@ export function stopAnswerAndGetFeatures() {
       intensity_variance: intensityVariance || 0,
       speech_rate: speechRate || 0,
       filler_count: fillerCount || 0,
-      repetition_count: repetitionCount || 0,  // ⭐ 新增字段
+      repetition_count: repetitionCount || 0,
       duration_sec: durationSec,
     };
 
     console.log("[voiceEngine] answer features =", features);
     console.log("[voiceEngine] transcript =", transcript);
 
-    // ⭐ 返回 features + transcript
+
     return { features, transcript };
   } catch (e) {
     console.error("[voiceEngine] stopAnswerAndGetFeatures error:", e);
@@ -281,7 +274,7 @@ export function stopAnswerAndGetFeatures() {
         intensity_variance: 0,
         speech_rate: 0,
         filler_count: 0,
-        repetition_count: 0,   // ⭐ 兜底也给上
+        repetition_count: 0, 
         duration_sec: 0,
       },
       transcript: "",
@@ -289,7 +282,6 @@ export function stopAnswerAndGetFeatures() {
   }
 }
 
-// ========== 主分析循环（每帧） ==========
 
 function analyzeLoop() {
   if (!analyser) {
@@ -300,17 +292,17 @@ function analyzeLoop() {
   analyser.getFloatTimeDomainData(dataArray);
   const rms = computeRMS(dataArray);
 
-  // 判断是否静音
+
   const isSilence = rms < RMS_SILENCE_THRESHOLD;
 
-  // 累积 silence 连续帧
+
   if (isSilence) {
     silenceFramesRun++;
   } else {
     silenceFramesRun = 0;
   }
 
-  // 简单的 pause 特征：静音时间越长，越接近 1
+
   const silenceMs = silenceFramesRun * FRAME_MS;
   let pauseFeature = 0;
   const PAUSE_START_MS = 800;
@@ -323,7 +315,6 @@ function analyzeLoop() {
     pauseFeature = 1;
   }
 
-  // 短时 RMS 窗口（平滑）
   rmsShortWindow.push(rms);
   if (rmsShortWindow.length > FEATURE_WINDOW_FRAMES) {
     rmsShortWindow.shift();
@@ -333,13 +324,12 @@ function analyzeLoop() {
       ? rmsShortWindow.reduce((a, b) => a + b, 0) / rmsShortWindow.length
       : rms;
 
-  // 简单 nervousness：RMS（越大越紧张） + pauseFeature
-  // 把 rms 映射到 [0, 1]，假设正常范围 0 ~ 0.1
+
   const normRms = clamp(rmsAvg / 0.1, 0, 1);
   const raw = 0.6 * normRms + 0.4 * pauseFeature;
   const score = clamp(raw * 100, 0, 100);
 
-  // baseline 阶段统计
+  // baseline
   if (isBaselineCollecting) {
     baselineTotalFrames++;
     if (isSilence) baselineSilenceFrames++;
@@ -347,7 +337,6 @@ function analyzeLoop() {
     baselineNervHistory.push(score);
   }
 
-  // 回答阶段统计 + biofeedback
   if (isAnswering) {
     answerTotalFrames++;
     if (isSilence) answerSilenceFrames++;
@@ -360,7 +349,7 @@ function analyzeLoop() {
   requestAnimationFrame(analyzeLoop);
 }
 
-// ========== 工具函数 ==========
+
 
 function computeRMS(frame) {
   let sumSquares = 0;
@@ -383,28 +372,27 @@ function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
 }
 
-// biofeedback 模式：real / fake / none
-// biofeedback 模式：real / fake / none
+// biofeedback ：real / fake / none
+
 function handleFrameForFeedback(realScore) {
   if (!onNervousnessCb) return;
 
   let displayScore = null;
 
   if (currentFeedbackMode === "real") {
-    // 真实 biofeedback：直接显示 realScore
+
     displayScore = realScore;
   } else if (currentFeedbackMode === "fake") {
-    // 假 biofeedback：永远显示“比较低”的 nervousness（看起来很好）
-    // 初始化在 5~20 之间
+
     if (fakeScore == null) {
       fakeScore = 5 + Math.random() * 15; // 5–20
     }
-    // 每帧轻微抖动，让它看起来“活着”
+
     const noise = (Math.random() - 0.5) * 4; // [-2, 2]
-    fakeScore = clamp(fakeScore + noise, 0, 25); // 限制在 0–25 这个很低的区间
+    fakeScore = clamp(fakeScore + noise, 0, 25);
     displayScore = fakeScore;
   } else {
-    // none：不显示条
+
     displayScore = null;
   }
 
@@ -414,7 +402,6 @@ function handleFrameForFeedback(realScore) {
 }
 
 
-// ========== Web Speech：语音转文字（浏览器侧） ==========
 
 function initSpeechRecognition() {
   const SpeechRecognition =
@@ -428,7 +415,6 @@ function initSpeechRecognition() {
   recognition.continuous = true;
   recognition.interimResults = true;
 
-  // ⭐ 如果你在实验里用英文回答，用 en-US；用中文就改成 "zh-CN"
   recognition.lang = "en-US";
 
   recognition.onresult = (event) => {

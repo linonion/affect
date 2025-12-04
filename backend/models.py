@@ -17,14 +17,13 @@ class SessionConfig(BaseModel):
 
 
 class VoiceFeatures(BaseModel):
-    # 你可以根据自己前端算的特征再加字段
     nervousness_score: float
     avg_rms: float
     silence_ratio: float
     intensity_variance: float
     speech_rate: float
     filler_count: int
-    repetition_count: int   # ⭐ 新增：重复词计数
+    repetition_count: int
     duration_sec: float
 
 
@@ -40,7 +39,7 @@ class Question(BaseModel):
 
 class AnswerUpload(BaseModel):
     question_id: int
-    transcript: Optional[str] = None  # 以后可以接 STT 文本
+    transcript: Optional[str] = None
     voice_features: VoiceFeatures
 
 
